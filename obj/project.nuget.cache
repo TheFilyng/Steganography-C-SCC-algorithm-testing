@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "iDman62lUYp/Kk8d7BHeQpAm/oK2LUApZheXfVno4hcH9QBKCP7eRhpOkyXOYDvobGuR7JbT1mlT5u1AhBzqGA==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Pollastre\\Desktop\\TFG\\Test_Steg\\Test_Steg.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Pollastre\\.nuget\\packages\\microsoft.win32.systemevents\\6.0.0\\microsoft.win32.systemevents.6.0.0.nupkg.sha512",
+    "C:\\Users\\Pollastre\\.nuget\\packages\\system.drawing.common\\6.0.0\\system.drawing.common.6.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
