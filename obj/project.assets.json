@@ -128,11 +128,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Pollastre\\Desktop\\TFG\\Test_Steg\\Test_Steg.csproj",
+      "projectUniqueName": "C:\\Repos\\TestSteg\\Test_Steg.csproj",
       "projectName": "Test_Steg",
-      "projectPath": "C:\\Users\\Pollastre\\Desktop\\TFG\\Test_Steg\\Test_Steg.csproj",
+      "projectPath": "C:\\Repos\\TestSteg\\Test_Steg.csproj",
       "packagesPath": "C:\\Users\\Pollastre\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Pollastre\\Desktop\\TFG\\Test_Steg\\obj\\",
+      "outputPath": "C:\\Repos\\TestSteg\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Pollastre\\AppData\\Roaming\\NuGet\\NuGet.Config"
