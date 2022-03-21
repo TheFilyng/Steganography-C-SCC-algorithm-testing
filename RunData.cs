@@ -6,8 +6,11 @@ namespace TestSteg
     {
         public String username {get; set;}
         //private DateTime fecha;
-        public int duracion {get; set;}//Duracion en milisegundos de la partida
-        public int puntuacion {get; set;}
+        public double duracion {get; set;}//Duracion en milisegundos de la partida
+        public long puntuacion {get; set;}
+        public int enemigosEliminados {get; set;}
+        public String nivelHash {get; set;}
+        public String gameVer {get; set;}
         public bool exito {get; set;}
         
     }

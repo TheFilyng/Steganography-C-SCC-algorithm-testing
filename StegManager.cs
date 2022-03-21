@@ -19,55 +19,64 @@ namespace TestSteg
             Console.WriteLine("Creado StegManager");
         }
 
-        private String generarBitsdeJson()
+        private String generateDataBits()
         {
-            String mensaje = JsonSerializer.Serialize(data);
+            String mensaje = JsonSerializer.Serialize(data); //Queremos que la RunData sea Json para facilitar el parseo al descodificar.
+            String mensajeBits = "";
+            Console.WriteLine("Datos en JSON");
+            Console.WriteLine(mensaje);
             Byte[] mensajeEnBytes = Encoding.Unicode.GetBytes(mensaje);
             StringBuilder sb = new StringBuilder();
             foreach (byte b in mensajeEnBytes)
             {
                 sb.Append(Convert.ToString(b, 2));
             }
-
-            return sb.ToString();
+            mensajeBits = sb.ToString();
+            Console.WriteLine("Datos en bits");
+            Console.WriteLine(mensajeBits);
+            return mensajeBits;
         }
 
-        public void codificarMensaje()
+        public void encodeData()
         {
             int R;
             int G;
             int B;
 
-            String bitsMensaje = generarBitsdeJson();
+            String bitsMensaje = generateDataBits();
             StringBuilder sb = new StringBuilder(bitsMensaje);
-            int index = 0;
+            int indexPixel = 0;
+            int indexString = 0;
             Console.WriteLine("Comienzo generación de stego image");
             while(true)
             {   
-                //Codificar en R 
-                if (sb.Length == index) break;
-                R = pixels[index].R;
-                R = sb[index].Equals('1') ? R | 1 : R & ~1; 
-                index++;             
-                
-                //Codificar en G
-                if (sb.Length == index) break;
-                G = pixels[index].G;
-                G = sb[index].Equals('1') ? G | 1 : G & ~1;
-                index++;
 
+                R = pixels[indexPixel].R;
+                G = pixels[indexPixel].G;
+                B = pixels[indexPixel].B;
+
+                //Codificar en R 
+                if (sb.Length == indexString) break;
+                R = sb[indexString++].Equals('1') ? R | 1 : R & ~1;              
+                //Codificar en G
+                if (sb.Length == indexString) break;
+                G = sb[indexString++].Equals('1') ? G | 1 : G & ~1;
                 //Codificar en B
-                if (sb.Length == index) break;
-                B = pixels[index].B;
-                B = sb[index].Equals('1') ? B | 1 : B & ~1;
-                index++;
+                if (sb.Length == indexString) break;
+                B = sb[indexString++].Equals('1') ? B | 1 : B & ~1;
+
+                pixels[indexPixel] = Color.FromArgb(R,G,B);
+
+                indexPixel++;
+
             }
             Console.WriteLine("Fin generación de stego image");
         }
 
-        public void crearStegoImage()
+        public void createStegoImage()
         {
             manager.SaveNewImage(pixels);
+            Console.WriteLine("Creada la stego image.");
         }
     }
 }

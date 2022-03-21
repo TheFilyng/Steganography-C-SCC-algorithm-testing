@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
-namespace Test_Steg
+using System.Text;
+using System.Text.Json;
+namespace TestSteg
 {
     class Program
     {
@@ -8,10 +10,19 @@ namespace Test_Steg
         {   
             String imagepath = "g30m3.png";
             Image imagen = Image.FromFile(imagepath);
-            ImageManager manager = new ImageManager(imagen);
-            Console.WriteLine("Imagen cargada!");
-            Console.WriteLine("Numero de bytes de la imagen: " + manager.getNumberOfBytes());
-            Console.WriteLine("Guardando bytes a nueva imagen");
+            RunData data = new RunData()
+            {
+                username = "Abarruti",
+                duracion = 300000000,
+                puntuacion = 123142542343,
+                enemigosEliminados = 23,
+                nivelHash = "027351de5c7ea8e7c5fb602564808b6d",
+                gameVer = "2021.1.04f",
+                exito = true
+            };
+            StegManager manager = new StegManager(data, imagen);
+            manager.encodeData();
+            manager.createStegoImage();
         }
     }
 }
