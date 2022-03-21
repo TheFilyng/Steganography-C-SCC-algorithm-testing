@@ -1,31 +1,24 @@
 using System;
 using System.Drawing;
 
-namespace Test_Steg
+namespace TestSteg
 {
     public sealed class ImageManager
     {
-        private Image coverImage;
-        private Byte[] coverImage_bytes; //Puede no ser necesario una vez se haga la esteganografia. El coverImage_colors ya tiene los bytes internamente
+        private Bitmap coverImage; //Para poder tratar los pixeles/bytes sin compresión procesamos la imagen como Bitmap.
+        private int coverImage_numBytes;
         private Color[] coverImage_colors;
         
         public ImageManager(Image coverImage)
         {
-          try
-          {
-            this.coverImage = coverImage;
-            coverImage_bytes = loadImageBytes();
-            coverImage_colors = generateColorArray();
-          }
-          catch (FileNotFoundException e)
-          {      
-              Console.WriteLine(e);
-          }
+          this.coverImage = new Bitmap(coverImage);
+          coverImage_colors = generateColorArray();
+          coverImage_numBytes = this.coverImage.Width*this.coverImage.Height*3;
         }
 
         public int getNumberOfBytes()
         {
-          return coverImage_bytes.Length;
+          return coverImage_numBytes;
         }
 
         public Color[] getPixels()
@@ -33,37 +26,43 @@ namespace Test_Steg
           return coverImage_colors;
         }
 
-        private Byte[] loadImageBytes()
+        public void SaveNewImage(Color[] newPixeles)
         {
-          using (var stream = new MemoryStream())
-          {
-            coverImage.Save(stream, coverImage.RawFormat);
-            return stream.ToArray();
-          }
-        }
-
-        public void SaveNewImage(Byte[] imageBytes)
-        {
-          Image newImage;
+          Bitmap newImage = new Bitmap(coverImage.Width, coverImage.Height);
           String newName = DateTime.Now.ToString("yyyyMMddHHmmss") + ".png";
-          using (var stream = new MemoryStream(imageBytes))
+          int numPixel = 0;
+          int width = coverImage.Width;
+          int height = coverImage.Height;
+          int i = 0;
+          int j = 0;
+          for (i = 0; i < width; i++)
           {
-            newImage = Image.FromStream(stream);
-            newImage.Save(newName, System.Drawing.Imaging.ImageFormat.Png);
-          }   
+            for (j = 0; j < height; j++)
+            {
+              newImage.SetPixel(i, j, newPixeles[numPixel]);
+              numPixel++;
+            }
+          }
+
+          //Guardar el bitmap como png
+          newImage.Save(newName, System.Drawing.Imaging.ImageFormat.Png);  
         }
         
-        private Color[] generateColorArray()
+        private Color[] generateColorArray() //Crea un array de pixeles, cada pixel tiene el valor A, R, G, B.
         {
-          Bitmap imgBmp = new Bitmap(coverImage);
           int numPixel = 0;
-          Color[] colors = new Color[0];
-          for (int i = 0; i < coverImage.Width; i++)
+          int width = coverImage.Width;
+          int height = coverImage.Height;
+          int i = 0;
+          int j = 0;
+          Color[] colors = new Color[width*height];
+          for (i = 0; i < width; i++)
           {
-            for (int j = 0; j < coverImage.Height; j++)
+            for (j = 0; j < height; j++)
             {
-              numPixel = i*j;
-              colors[numPixel] = imgBmp.GetPixel(i, j);
+              Color pixel = coverImage.GetPixel(i, j);
+              colors[numPixel] = pixel;
+              numPixel++;
             }
           }
           return colors;
