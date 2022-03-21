@@ -29,7 +29,7 @@ namespace TestSteg
             StringBuilder sb = new StringBuilder();
             foreach (byte b in mensajeEnBytes)
             {
-                sb.Append(Convert.ToString(b, 2));
+                sb.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
             }
             mensajeBits = sb.ToString();
             Console.WriteLine("Datos en bits");
