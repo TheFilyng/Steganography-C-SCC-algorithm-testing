@@ -3,12 +3,13 @@ using System.Drawing;
 using System.Text;
 using System.Text.Json;
 using System.Collections;
+using System.Web;
 
 namespace TestSteg
 {
     public class StegManager
     {
-
+        private static String key = "EED8BC84E4CAA3B61CC2D30D734C3FD7";
         private RunData data;
         private Color[] pixels;
         private ImageManager manager;
@@ -26,7 +27,7 @@ namespace TestSteg
             String mensaje = JsonSerializer.Serialize(data); //Queremos que la RunData sea Json para facilitar el parseo al descodificar.
             Console.WriteLine("Datos en JSON");
             Console.WriteLine(mensaje);
-            Byte[] mensajeEnBytes = Encoding.ASCII.GetBytes(mensaje);
+            Byte[] mensajeEnBytes = Encoding.ASCII.GetBytes(XORencrypt(mensaje, key));
             return mensajeEnBytes;
             
         }
@@ -42,7 +43,38 @@ namespace TestSteg
             for(int i = 0; i < bits.Length; i++) if(bits[i]) r |= 1 << (bits.Length - i - 1);
             return r;
         }
-         
+
+        //Obtenido de: https://piriysdev.wordpress.com/2014/04/01/c-sharp-xor-encryptiondecryption/
+        public static string XORencrypt(string text, string key)
+        {
+            byte[] decrypted = Encoding.UTF8.GetBytes(text);
+            byte[] encrypted = new byte[decrypted.Length];
+        
+            for (int i = 0; i < decrypted.Length; i++)
+            {
+                encrypted[i] = (byte)(decrypted[i] ^ key[i % key.Length]);
+            }
+        
+            string xored = System.Convert.ToBase64String(encrypted);
+        
+            return xored;
+        }
+        public static string XORdecrypt(string text, string key)
+        {
+            var decoded = System.Convert.FromBase64String(HttpUtility.UrlDecode(text));
+        
+            byte[] result = new byte[decoded.Length];
+        
+            for (int c = 0; c < decoded.Length; c++)
+            {
+                result[c] = (byte)((uint)decoded[c] ^ (uint)key[c % key.Length]);
+            }
+            
+            string dexored = Encoding.UTF8.GetString(result);
+        
+            return dexored;
+        }
+ 
         public void encodeData()
         {
             int R = 0, G = 0, B = 0;
@@ -201,7 +233,7 @@ namespace TestSteg
                     //Lo añadimos al mensaje
                     mensajeDecoded = mensajeDecoded + caracter;
                 }
-                Console.WriteLine(mensajeDecoded);
+                Console.WriteLine(XORdecrypt(mensajeDecoded, key));
             }
             else
             {
