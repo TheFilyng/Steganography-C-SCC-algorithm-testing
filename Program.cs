@@ -2,6 +2,8 @@
 using System.Drawing;
 using System.Text;
 using System.Text.Json;
+using System.Collections;
+
 namespace TestSteg
 {
     class Program
@@ -20,9 +22,12 @@ namespace TestSteg
                 gameVer = "2021.1.04f",
                 exito = true
             };
+
             StegManager manager = new StegManager(data, imagen);
             manager.encodeData();
+            manager.decodeData();
             manager.createStegoImage();
+
         }
     }
 }

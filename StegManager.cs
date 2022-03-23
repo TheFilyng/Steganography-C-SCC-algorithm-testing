@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Text;
 using System.Text.Json;
+using System.Collections;
 
 namespace TestSteg
 {
@@ -20,148 +21,191 @@ namespace TestSteg
             Console.WriteLine("Creado StegManager");
         }
 
-        private String generateDataBits()
+        private Byte[] generateDataBytes()
         {
             String mensaje = JsonSerializer.Serialize(data); //Queremos que la RunData sea Json para facilitar el parseo al descodificar.
-            String mensajeBits = "";
             Console.WriteLine("Datos en JSON");
             Console.WriteLine(mensaje);
-            Byte[] mensajeEnBytes = Encoding.Unicode.GetBytes(mensaje);
-            StringBuilder sb = new StringBuilder();
-            foreach (byte b in mensajeEnBytes)
-            {
-                sb.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
-            }
-            mensajeBits = sb.ToString();
-            return mensajeBits;
+            Byte[] mensajeEnBytes = Encoding.ASCII.GetBytes(mensaje);
+            return mensajeEnBytes;
+            
+        }
+        private bool BitFromByte(int b, int bitNumber){
+                bool bitbool = ((b >> bitNumber) & 1) != 0;
+                return bitbool;
         }
 
-        private int obtainEncodedMessageSize()
-        {
-            int tamanoMensaje = 0;
-            int i = 0;
-            //Extraemos tamaño del mensaje de los primeros 32 bytes
-            StringBuilder sb = new StringBuilder();
-            /*Al ser los primeros 32 bits codificados los que contienen el tamaño del mensaje
-            tenemos que mirar los primeros 10 bytes. Del decimo byte solamente los valores R y G*/
-            for (i = 0; i < 11; i++)
-            {
-                Color pixelActual = pixels[i];
-                if(i < 10)
-                {                        
-                    int lsbR = pixelActual.R & 1;
-                    sb.Append(lsbR);
-                    int lsbG = pixelActual.G & 1;
-                    sb.Append(lsbG);
-                    int lsbB = pixelActual.B & 1;
-                    sb.Append(lsbB);
-                }
-                else
-                {
-                    int lsbR = pixelActual.R & 1;
-                    sb.Append(lsbR);
-                    int lsbG = pixelActual.G & 1;
-                    sb.Append(lsbG);
-                }
-            }
-            tamanoMensaje = Convert.ToInt32(sb.ToString(), 2);
-            return tamanoMensaje;
+        //Obtenido de: https://www.codeproject.com/Answers/312449/How-to-convert-a-bool-array-to-a-byte-and-further#answer2
+        int BoolArrayToInt(bool[] bits){
+            if(bits.Length > 32) throw new ArgumentException("Can only fit 32 bits in a uint");  
+            int r = 0;
+            for(int i = 0; i < bits.Length; i++) if(bits[i]) r |= 1 << (bits.Length - i - 1);
+            return r;
         }
+         
         public void encodeData()
         {
-            int R;
-            int G;
-            int B;
+            int R = 0, G = 0, B = 0;
+            int bit = 0;
+            int cicloRGB = 0;       
+            Byte[] mensajeEnBytes = generateDataBytes();
+            int tamanoMensaje = mensajeEnBytes.Length;
+            int pixelActual = 0;
+            bool pixelModificado = false;
+            //Codificación del tamaño del mensaje, en los primeros 32 bits.
+            for (int i = 31; i >= 0; i--)
+            {
+                pixelModificado = false;
+                bit = (BitFromByte(tamanoMensaje, i) == true) ? 1 : 0; //Obtenemos el bit del caracter
+                Console.Write(bit);
+                if(cicloRGB == 0) //Codificamos el bit en R
+                {
+                    R = pixels[pixelActual].R;                        
+                    R = (bit == 1) ? R | 1 : R & ~1;
+                    //Console.WriteLine("Estamos en R " + i);
+                    cicloRGB++;
+                }
+                else if (cicloRGB == 1) //Codificamos el bit en G
+                {
+                    G = pixels[pixelActual].G;                          
+                    G = (bit == 1) ? G | 1 : G & ~1;
+                    //Console.WriteLine("Estamos en G " + i);
 
-            String bitsMensaje = generateDataBits();
-            int messageLength = bitsMensaje.Length;
-            Console.WriteLine("Tamaño del mensaje: " + messageLength);
-            String bitsTamano = Convert.ToString(messageLength, 2).PadLeft(32, '0');
-            Console.WriteLine("Bits del tamaño del mensaje: " + bitsTamano);
-            String bitsToEncode = bitsTamano+bitsMensaje; //Necesitamos el tamaño del mensaje para poder decodificar. Los primeros 32 bytes indicaran esto.
-            Console.WriteLine("Datos en bits");
-            Console.WriteLine(bitsToEncode);
-            StringBuilder sb = new StringBuilder(bitsToEncode);
-            int indexPixel = 0;
-            int indexString = 0;       
+                    cicloRGB++;
+                }
+                else
+                {                   
+                    B = pixels[pixelActual].B;                          
+                    B = (bit == 1) ? B | 1 : B & ~1;
+                    //Se han modificado los bits de cada uno de los canales del pixel, por lo que insertamos el nuevo pixel en el array de pixeles
+                    pixels[pixelActual] = Color.FromArgb(255,R,G,B);
+                    pixelActual++;
+                    pixelModificado = true;
+                    cicloRGB = 0;
+
+                }         
+            }
+            if(!pixelModificado) //Si la ultima iteración no pasa por el caso del canal B
+            {
+                B = pixels[pixelActual].B;                          
+                pixels[pixelActual] = Color.FromArgb(255,R,G,B);
+                pixelActual++;
+                pixelModificado = false;
+            }
             
-            Console.WriteLine("Comienzo generación de stego image");
-            while(true)
-            {   
-
-                R = pixels[indexPixel].R;
-                G = pixels[indexPixel].G;
-                B = pixels[indexPixel].B;
-
-                //Codificar en R 
-                if (sb.Length == indexString) break;
-                R = sb[indexString++].Equals('1') ? R | 1 : R & ~1;              
-                //Codificar en G
-                if (sb.Length == indexString) break;
-                G = sb[indexString++].Equals('1') ? G | 1 : G & ~1;
-                //Codificar en B
-                if (sb.Length == indexString) break;
-                B = sb[indexString++].Equals('1') ? B | 1 : B & ~1;
-
-                pixels[indexPixel] = Color.FromArgb(R,G,B);
-
-                indexPixel++;
-
+            
+            //Codificación del mensaje
+            cicloRGB = 0;
+            Console.WriteLine();
+            Console.WriteLine("Comienzo de codificación");
+            foreach (Byte b in mensajeEnBytes)
+            {
+                for (int i = 7; i >= 0; i--)
+                {
+                    pixelModificado = false;
+                    bit = (BitFromByte((int)b, i) == true) ? 1 : 0; //Obtenemos el bit del caracter
+                    if(cicloRGB == 0) //Codificamos el bit en R
+                    {
+                        R = pixels[pixelActual].R;                        
+                        R = (bit == 1) ? R | 1 : R & ~1;
+                        cicloRGB++;
+                    }
+                    else if (cicloRGB == 1) //Codificamos el bit en G
+                    {
+                        G = pixels[pixelActual].G;                          
+                        G = (bit == 1) ? G | 1 : G & ~1;
+                        cicloRGB++;
+                    }
+                    else
+                    {                   
+                        B = pixels[pixelActual].B;                          
+                        B = (bit == 1) ? B | 1 : B & ~1;
+                        //Se han modificado los bits de cada uno de los canales del pixel, por lo que insertamos el nuevo pixel en el array de pixeles
+                        pixels[pixelActual] = Color.FromArgb(255,R,G,B);
+                        pixelActual++;
+                        cicloRGB = 0;
+                    }         
+                }
+                if(!pixelModificado) //Si la ultima iteración no pasa por el caso del canal B
+                {
+                    B = pixels[pixelActual].B;                          
+                    pixels[pixelActual] = Color.FromArgb(255,R,G,B);
+                    pixelActual++;
+                    pixelModificado = false;
+                    cicloRGB = 0;
+                }
             }
             wasDataEncoded = true;
-            Console.WriteLine("Fin generación de stego image");
+            Console.WriteLine();
+            Console.WriteLine("Mensaje codificado");
+            for (int j = 0; j < 11; j++)
+            {
+                Console.Write(pixels[j].R & 1);
+                Console.Write(pixels[j].G & 1);
+                Console.Write(pixels[j].B & 1);
+            }
         }
 
         public void decodeData()
         {
             if(wasDataEncoded)
             {
-                int tamanoMensaje = obtainEncodedMessageSize();
-                String decodifiedMessage = "";
-                Byte[] messageBytes = new Byte[tamanoMensaje];
-                //Proceso de decodificacion
-                StringBuilder sb = new StringBuilder();
-                int contadorBits = 0;
-                int indexPixel = 10;
-                while (!(contadorBits==tamanoMensaje))
-                {
-                    Color pixelActual = pixels[indexPixel];
-                    if(indexPixel==10)
-                    {
-                        int lsbB = pixelActual.B & 1;
-                        sb.Append(lsbB);
-                        contadorBits++;
-                    }
-                    else
-                    {
-                        if (contadorBits == tamanoMensaje) break;
-                        int lsbR = pixelActual.R & 1;
-                        contadorBits++;
-                        sb.Append(lsbR);
-                        
-                        if (contadorBits == tamanoMensaje) break;    
-                        int lsbG = pixelActual.G & 1;
-                        contadorBits++;
-                        sb.Append(lsbG);
+                //Proceso de obtención del tamaño del mensaje de los primeros 11 pixeles
+                int i;
+                int indexBit = 0;
+                int indexPixel = 0;
+                int tamanoMensaje = 0;
+                Color pixelActual;
 
-                        if (contadorBits == tamanoMensaje) break;
-                        int lsbB = pixelActual.B & 1;
-                        contadorBits++;
-                        sb.Append(lsbB);
-                    }
-                    /*for(int i = 0; i < tamanoMensaje; ++i)
+                //Primero obtenemos el tamaño del mensaje
+                bool[] bitsMensaje = new bool[32];
+                while(indexBit < 32)
+                {
+                    pixelActual = pixels[indexPixel];
+                    bitsMensaje[indexBit++] = ((pixelActual.R & 1) == 1);
+
+                    bitsMensaje[indexBit++] = ((pixelActual.G & 1) == 1);
+
+                    if(indexBit==32) break;
+                    bitsMensaje[indexBit++] = ((pixelActual.B & 1) == 1);
+
+                    indexPixel++;
+                }
+                indexPixel++;
+                tamanoMensaje = BoolArrayToInt(bitsMensaje);
+                Console.WriteLine("\n" + tamanoMensaje);
+
+                //Obtenemos el mensaje
+                String mensajeDecoded = "";
+                int numeroDeBitsMensaje = tamanoMensaje*8;
+                bool[] caracterBits = new bool[8];
+                for (i = 0; i < tamanoMensaje; i++)
+                {
+                    char caracter;
+                    indexBit = 0;
+                    while(indexBit < 8)
                     {
-                        messageBytes[i] = Convert.ToByte(sb.ToString().Substring(8 * i, 8), 2);
+                        pixelActual = pixels[indexPixel];
+                        caracterBits[indexBit++] = ((pixelActual.R & 1) == 1);
+
+                        caracterBits[indexBit++] = ((pixelActual.G & 1) == 1);
+
+                        if(indexBit==8) break;
+                        caracterBits[indexBit++] = ((pixelActual.B & 1) == 1);
+
+                        indexPixel++;
                     }
-                    decodifiedMessage = Encoding.Unicode.GetString(messageBytes);
-                    Console.WriteLine("Mensaje descodificado:");
-                    Console.WriteLine(decodifiedMessage);*/
-                }     
-            Console.WriteLine("BITS DECODIFICADOS");
-            Console.WriteLine(sb.ToString());   
+                    indexPixel++;
+                    //Obtenemos el valor ascii  
+                    caracter = Convert.ToChar(BoolArrayToInt(caracterBits));
+                    //Lo añadimos al mensaje
+                    mensajeDecoded = mensajeDecoded + caracter;
+                }
+                Console.WriteLine(mensajeDecoded);
             }
-            else{
-                Console.WriteLine("No se han codificado datos.");
+            else
+            {
+                Console.WriteLine("No se ha codificado ningún mensaje");
             }
         }
 
